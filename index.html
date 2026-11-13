@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#16233B">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Hisab Khata</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Hind:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: a bahi-khata ledger — ink-blue cover band on top, paper-white pages below, red = paisa diya, green = paisa mila; bottom tab bar for one-thumb use on phones. */
+:root{
+  --paper:#F3F1EC; --card:#FFFFFF; --ink:#18212F; --muted:#666C78; --line:#E2DED5;
+  --accent:#2448C8; --accent-ink:#FFFFFF; --gold:#E39B12;
+  --cover:#16233B; --cover-ink:#F3F1EC; --cover-muted:#A9B4C8;
+  --good:#11744A; --good-bg:#E2F2E9; --bad:#BE3227; --bad-bg:#FBE6E3;
+  --shadow:0 1px 2px rgba(24,33,47,.06),0 4px 14px rgba(24,33,47,.06);
+  --display:"Baloo 2",system-ui,sans-serif; --body:"Hind",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E131B; --card:#171E29; --ink:#E8ECF2; --muted:#98A1B0; --line:#273141;
+    --accent:#7D9BFF; --accent-ink:#0E131B; --gold:#F2B33D;
+    --cover:#1A2638; --cover-ink:#EEF1F6; --cover-muted:#93A0B6;
+    --good:#4CC489; --good-bg:#11301F; --bad:#FF7B6C; --bad-bg:#3A1A17;
+    --shadow:0 1px 2px rgba(0,0,0,.3);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E131B; --card:#171E29; --ink:#E8ECF2; --muted:#98A1B0; --line:#273141;
+  --accent:#7D9BFF; --accent-ink:#0E131B; --gold:#F2B33D;
+  --cover:#1A2638; --cover-ink:#EEF1F6; --cover-muted:#93A0B6;
+  --good:#4CC489; --good-bg:#11301F; --bad:#FF7B6C; --bad-bg:#3A1A17;
+  --shadow:0 1px 2px rgba(0,0,0,.3);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3{font-family:var(--display);line-height:1.15;margin:0;text-wrap:balance}
+.num,.amt{font-variant-numeric:tabular-nums}
+.hidden{display:none!important}
+
+/* top band */
+.top{background:var(--cover);color:var(--cover-ink);padding:14px 16px 12px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:20}
+.brand{display:flex;flex-direction:column;line-height:1}
+.brand b{font-family:var(--display);font-size:24px;font-weight:800;letter-spacing:.2px}
+.brand small{color:var(--cover-muted);font-size:12px;margin-top:3px}
+.sync{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--cover-muted);background:rgba(255,255,255,.07);padding:5px 10px;border-radius:99px}
+.sync i{width:8px;height:8px;border-radius:50%;background:#9AA3B2}
+.sync.live i{background:#3DDC84;box-shadow:0 0 0 3px rgba(61,220,132,.2)}
+.sync.slow i{background:var(--gold)}
+.sync.err i{background:#FF6B5B}
+
+main{max-width:880px;margin:0 auto;padding:16px 16px 110px;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow)}
+.sec-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.sec-h h3{font-size:18px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+
+/* hero */
+.hero{background:var(--cover);color:var(--cover-ink);border-radius:16px;padding:18px;display:grid;gap:14px}
+.hero .hrow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.hero .k{font-size:13px;color:var(--cover-muted)}
+.hero .v{font-family:var(--display);font-size:28px;font-weight:700;line-height:1.1}
+.hero .v.good{color:#5BE29F}.hero .v.bad{color:#FF8A7C}
+.hero .net{border-top:1px solid rgba(255,255,255,.12);padding-top:12px;display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.hero .net b{font-family:var(--display);font-size:20px;color:var(--gold)}
+
+.quick{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.qbtn{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px;border-radius:14px;border:1px solid var(--line);background:var(--card);font-weight:600;font-size:14px;text-align:center;box-shadow:var(--shadow)}
+.qbtn svg{width:26px;height:26px;color:var(--accent)}
+.qbtn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.qbtn.primary svg{color:var(--accent-ink)}
+
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{border-radius:12px;padding:12px;border:1px solid var(--line);background:var(--card)}
+.tile .k{font-size:13px;color:var(--muted)}
+.tile .v{font-family:var(--display);font-size:22px;font-weight:700}
+
+/* chart */
+.chart{display:grid;gap:6px}
+.chart .cmax{font-size:12px;color:var(--muted)}
+.cols{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;height:150px;align-items:end;border-bottom:1px solid var(--line);background:repeating-linear-gradient(to top,transparent 0,transparent 49px,var(--line) 49px,var(--line) 50px)}
+.col{display:flex;align-items:flex-end;justify-content:center;gap:3px;height:100%}
+.bar{width:40%;max-width:18px;border-radius:4px 4px 0 0;min-height:2px}
+.bar.gave{background:var(--bad)}.bar.got{background:var(--good)}
+.clabels{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;font-size:12px;color:var(--muted);text-align:center}
+.legend{display:flex;gap:14px;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+
+/* lists */
+.list{display:flex;flex-direction:column}
+.erow,.prow{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:11px 4px;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;width:100%}
+.list > :last-child{border-bottom:0}
+.etype{width:34px;height:34px;border-radius:10px;display:grid;place-items:center}
+.etype svg{width:18px;height:18px}
+.etype.gave{background:var(--bad-bg);color:var(--bad)}
+.etype.got{background:var(--good-bg);color:var(--good)}
+.emain{display:flex;flex-direction:column;min-width:0}
+.ename{font-weight:600;overflow-wrap:anywhere}
+.esub{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.eamt{font-weight:700;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.eamt small{display:block;font-weight:500;font-size:12px;color:var(--muted)}
+.gave-t{color:var(--bad)}.got-t{color:var(--good)}
+.avatar{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:18px;background:var(--paper);border:1px solid var(--line);color:var(--accent)}
+.chip{display:inline-flex;flex-direction:column;align-items:flex-end;padding:4px 10px;border-radius:10px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.chip small{font-size:11px;font-weight:600;opacity:.85}
+.chip.good{background:var(--good-bg);color:var(--good)}
+.chip.bad{background:var(--bad-bg);color:var(--bad)}
+.chip.zero{background:var(--paper);color:var(--muted)}
+
+/* toolbar & buttons */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.toolbar input,.toolbar select{flex:1 1 140px;min-width:0}
+input,select,textarea{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+textarea{resize:vertical}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:14px;font-weight:600}
+.btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--card);font-weight:600;font-size:15px;white-space:nowrap}
+.btn svg{width:18px;height:18px}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.red{background:var(--bad);color:#fff;border-color:var(--bad)}
+.btn.green{background:var(--good);color:#fff;border-color:var(--good)}
+.btn.ghost{background:none}
+.btn.danger{color:var(--bad)}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn.sm{padding:6px 10px;font-size:14px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* party header */
+.phead{display:grid;gap:12px}
+.phead .top2{display:flex;align-items:center;gap:12px}
+.phead h2{font-size:24px}
+.bigbal{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:12px;gap:8px;flex-wrap:wrap}
+.bigbal.good{background:var(--good-bg);color:var(--good)}
+.bigbal.bad{background:var(--bad-bg);color:var(--bad)}
+.bigbal.zero{background:var(--paper);color:var(--muted)}
+.bigbal b{font-family:var(--display);font-size:26px}
+.twobtn{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.twobtn .btn{padding:13px}
+.ledger-h,.lrow{display:grid;grid-template-columns:1fr 84px 84px;gap:8px;align-items:center}
+.ledger-h{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;padding:0 4px 6px;border-bottom:1px solid var(--line)}
+.ledger-h span:not(:first-child),.lrow .c{text-align:right}
+.lrow{padding:10px 4px;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;width:100%}
+.lrow .c{font-weight:700;font-variant-numeric:tabular-nums}
+.lrow .run{font-size:12px;color:var(--muted)}
+
+/* proofs */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.pcard{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card);padding:0;text-align:left;display:flex;flex-direction:column}
+.pthumb{aspect-ratio:3/4;background:var(--paper);display:grid;place-items:center;overflow:hidden}
+.pthumb img{width:100%;height:100%;object-fit:cover}
+.pthumb svg{width:40px;height:40px;color:var(--muted)}
+.pmeta{padding:8px 10px;font-size:13px}
+.pmeta b{display:block;font-size:14px;overflow-wrap:anywhere}
+
+/* nav */
+.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:6px 4px calc(6px + env(safe-area-inset-bottom));z-index:30}
+.tabs button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;color:var(--muted);padding:6px 0;border-radius:10px;font-weight:600}
+.tabs button svg{width:22px;height:22px}
+.tabs button.on{color:var(--accent)}
+.tabs button.on svg{transform:translateY(-1px)}
+
+/* modal */
+.scrim{position:fixed;inset:0;background:rgba(10,14,20,.5);z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.modal{background:var(--card);width:100%;max-width:560px;max-height:92%;overflow:auto;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px}
+@media (min-width:640px){.scrim{align-items:center}.modal{border-radius:18px}}
+.mhead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.mhead h2{font-size:21px}
+.x{border:0;background:var(--paper);width:34px;height:34px;border-radius:50%;font-size:20px;line-height:1}
+.smart{background:var(--paper);border:1px dashed var(--line);border-radius:12px;padding:12px;display:grid;gap:8px}
+.smart .srow{display:flex;gap:8px}
+.mic{flex:none;width:46px;border-radius:10px;border:1px solid var(--line);background:var(--card);display:grid;place-items:center}
+.mic svg{width:22px;height:22px;color:var(--accent)}
+.mic.on{background:var(--bad);border-color:var(--bad)}
+.mic.on svg{color:#fff}
+@media (prefers-reduced-motion:no-preference){.mic.on{animation:pulse 1.2s infinite}}
+@keyframes pulse{50%{box-shadow:0 0 0 6px rgba(190,50,39,.2)}}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg input{position:absolute;opacity:0;pointer-events:none;width:1px}
+.seg label{border:1.5px solid var(--line);border-radius:12px;padding:10px;text-align:center;font-weight:700;cursor:pointer;display:flex;flex-direction:column}
+.seg label small{font-weight:500;color:var(--muted);font-size:12px}
+.seg input:focus-visible + label{outline:2px solid var(--accent)}
+#t-g:checked + label{border-color:var(--bad);background:var(--bad-bg);color:var(--bad)}
+#t-l:checked + label{border-color:var(--good);background:var(--good-bg);color:var(--good)}
+.mfoot{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap}
+.mfoot .grow{flex:1}
+.proofbox{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px}
+.proofbox img{width:56px;height:56px;object-fit:cover;border-radius:8px}
+.filebtn{position:relative;overflow:hidden}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.status{font-size:14px;color:var(--muted)}
+.status.err{color:var(--bad)}
+.review{display:flex;flex-direction:column;gap:10px}
+.rv{border:1px solid var(--line);border-radius:12px;padding:10px;display:grid;gap:8px}
+.rv.off{opacity:.5}
+.rv .rtop{display:flex;align-items:center;gap:8px}
+.rv .rtop input[type=checkbox]{width:20px;height:20px;flex:none}
+.rv .rgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.rv input,.rv select{padding:8px 10px}
+.bigimg{width:100%;border-radius:12px;border:1px solid var(--line)}
+.empty{text-align:center;padding:26px 12px;display:grid;gap:10px;justify-items:center}
+.empty svg{width:48px;height:48px;color:var(--gold)}
+.banner{padding:10px 12px;border-radius:12px;background:var(--bad-bg);color:var(--bad);font-size:14px}
+.banner.info{background:var(--paper);color:var(--muted);border:1px solid var(--line)}
+.toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:12px;font-size:14px;z-index:80;max-width:90%;box-shadow:var(--shadow)}
+.steps{margin:0;padding-left:20px;display:grid;gap:6px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px}
+@media (max-width:420px){
+  .hero .v{font-size:23px}
+  .ledger-h,.lrow{grid-template-columns:1fr 74px 74px}
+  .rv .rgrid{grid-template-columns:1fr 1fr}
+}
+
+body.locked .tabs{display:none}
+.login{max-width:420px;margin:24px auto 0;width:100%}
+.lockicon{display:grid;place-items:center}
+.lockicon svg{width:44px;height:44px;color:var(--accent)}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><b>हिसाब खाता</b><small>Len-den ka live register</small></div>
+  <div class="sync" id="sync"><i></i><span>Jud raha hai…</span></div>
+</header>
+<main id="view"></main>
+<nav class="tabs" id="tabs">
+  <button data-tab="home" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
+  <button data-tab="khate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20c-.5-2.6-2-4.4-4-5.1"/></svg>Khate</button>
+  <button data-tab="entries"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Entries</button>
+  <button data-tab="proofs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 14h8M8 17.5h5"/></svg>Parchiyan</button>
+  <button data-tab="more"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Backup</button>
+</nav>
+<div id="modalRoot"></div>
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+<script>
+/* ====== SETTINGS: sirf yahan badlav karein ====== */
+window.HISAB_CONFIG = {
+  // Firebase console > Project settings > Your apps > Web app > firebaseConfig
+  firebase: {
+    apiKey: "AIzaSyB7MhQhQ3tGmdlNNCRKY9ST7XRN06BnWyI",
+    authDomain: "hisab-khata-6383e.firebaseapp.com",
+    projectId: "hisab-khata-6383e",
+    storageBucket: "hisab-khata-6383e.firebasestorage.app",
+    messagingSenderId: "298456896108",
+    appId: "1:298456896108:web:e8fdf035f35ad749fbfe49"
+  },
+    phones: [], // number public na ho, isliye khali; suraksha Firestore Rules se hoti hai
+  loginDomain: "hisabkhata.app",
+  aiModel: "gemini-3.5-flash-lite"
+};
+</script>
+<script type="module">import{initializeApp as Qa}from"https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";import{getAuth as ae,signInWithEmailAndPassword as ee,createUserWithEmailAndPassword as te,onAuthStateChanged as ne,signOut as Fa}from"https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";import{initializeFirestore as ie,persistentLocalCache as se,persistentMultipleTabManager as oe,collection as re,doc as Ra,onSnapshot as le,setDoc as z,updateDoc as Ka,getDoc as ce,getDocs as de,writeBatch as q}from"https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";import{getAI as pe,getGenerativeModel as ue,GoogleAIBackend as he}from"https://www.gstatic.com/firebasejs/13.1.0/firebase-ai.js";function me(){let a=window.HISAB_CONFIG||{},e=null;try{e=JSON.parse(localStorage.getItem("hisab_cfg")||"null")}catch{}return{firebase:a.firebase&&a.firebase.apiKey&&!/PASTE/.test(a.firebase.apiKey)?a.firebase:e&&e.apiKey?e:null,phones:(a.phones||[]).map(String),domain:a.loginDomain||"hisabkhata.app",aiModel:a.aiModel||"gemini-3.5-flash-lite"}}var N=me(),b=a=>document.querySelector(a),c=a=>String(a??"").replace(/[&<>"']/g,e=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[e]),g=a=>"\u20B9"+Math.abs(Math.round((Number(a)||0)*100)/100).toLocaleString("en-IN",{maximumFractionDigits:2}),da=a=>String(a).padStart(2,"0"),be=a=>a.getFullYear()+"-"+da(a.getMonth()+1)+"-"+da(a.getDate()),K=()=>be(new Date),ma=a=>{if(!a||!/^\d{4}-\d{2}-\d{2}$/.test(a))return a||"";let[e,t,n]=a.split("-").map(Number);return new Date(e,t-1,n).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})},D=a=>String(a||"").trim().toLowerCase().replace(/\s+/g," "),Y=a=>typeof a=="string"&&/^[A-Za-z0-9_\-]{1,100}$/.test(a),ye=a=>String(a||"").split("@")[0],h={up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>',down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17 7 7 17M15 17H7V9"/></svg>',plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',cam:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',mic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>',clip:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="m21 11-8.5 8.5a5 5 0 0 1-7-7L14 4a3.3 3.3 0 0 1 4.7 4.7l-8.5 8.5a1.7 1.7 0 0 1-2.4-2.4L15.5 7"/></svg>',back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18 9 12l6-6"/></svg>',book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 21.5A2.5 2.5 0 0 1 6.5 19H20v3H6.5"/><path d="M9 7h7M9 11h5"/></svg>',wa:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 20.5 5 16a8.5 8.5 0 1 1 3 3z"/><path d="M9 9.5c.3 2.3 2.2 4.2 4.5 4.5l1.2-1.2 2 1-.5 1.7c-3.8.2-7.5-3.5-7.3-7.3L10.6 7.7l1 2z"/></svg>',dl:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>',spark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/></svg>',lock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>'},pa=["parties","entries","proofs","trash","members"],s={parties:new Map,entries:new Map,proofs:new Map,trash:new Map,members:new Map,got:new Set,live:new Set,err:null,online:navigator.onLine,tab:"home",partyId:null,q:"",from:"",to:"",ftype:"all",pq:"",pfrom:"",pto:""},X=null,H=null,x=null,I=null,F="",ua=[],sa=null,Z=new Map,Pa;function f(a,e=2800){let t=b("#toast");t.textContent=a,t.classList.remove("hidden"),clearTimeout(Pa),Pa=setTimeout(()=>t.classList.add("hidden"),e)}function U(a){let e=b("#modalRoot");return e.innerHTML='<div class="scrim" id="scrim"><div class="modal" role="dialog" aria-modal="true">'+a+"</div></div>",b("#scrim").addEventListener("click",t=>{t.target.id==="scrim"&&B()}),e.querySelectorAll("[data-close]").forEach(t=>t.addEventListener("click",B)),e.querySelector(".modal")}function B(){va(),b("#modalRoot").innerHTML=""}function O(a,e,t="Haan",n=!0){return new Promise(i=>{let o=U(`<div class="mhead"><h2>${c(a)}</h2></div><p class="muted" style="margin:0">${e}</p>
+      <div class="mfoot"><button class="btn" id="cNo">Nahi</button><button class="btn ${n?"red":"pri"}" id="cYes">${c(t)}</button></div>`);o.querySelector("#cNo").onclick=()=>{B(),i(!1)},o.querySelector("#cYes").onclick=()=>{B(),i(!0)}})}function ba(a){let e=a&&a.code||"";return e.includes("permission-denied")?"Is number ko likhne ki anumati nahi hai. Firebase ke Rules mein number jodein.":e.includes("resource-exhausted")?"Aaj ki free seema poori ho gayi. Kal dobara koshish karein.":"Save nahi ho paya ("+(e||"network")+")."}var w=a=>{a.catch(e=>f(ba(e),4e3))},ya=a=>re(x,a),v=(a,e)=>Ra(x,a,e),G=a=>Ra(ya(a)).id;function fa(){let a=new Map;for(let e of s.entries.values()){let t=a.get(e.partyId);t||(t={bal:0,count:0,last:""},a.set(e.partyId,t)),t.bal+=e.type==="gave"?+e.amount:-e.amount,t.count++,(e.date||"")>t.last&&(t.last=e.date)}return a}function _(a,e=-1){return a.sort((t,n)=>(t.date===n.date?(t.createdAt||0)-(n.createdAt||0):t.date<n.date?-1:1)*e)}function ga(a){let e=D(a);for(let t of s.parties.values())if(D(t.name)===e)return t;return null}function za(a){let e=ga(a);if(e)return e.id;let t=G("parties"),n={name:String(a).trim().slice(0,80),phone:"",note:"",createdAt:Date.now(),createdBy:I};return s.parties.set(t,{id:t,...n}),w(z(v("parties",t),n)),t}function Q(a,e,t){let n=a==="party"?"parties":a==="entry"?"entries":"proofs",i=s[n].get(e);if(!i)return;let{id:o,...l}=i;t.set(v("trash",a+"-"+e),{kind:a,refId:e,data:l,deletedAt:Date.now(),deletedBy:I}),t.delete(v(n,e))}var C=a=>{if(!a)return"";if(a===I)return"Aap";let e=s.members.get(a);return e?e.name||"\u2026"+String(e.phone||"").slice(-4):""};function fe(){if(!N.firebase){Na();return}try{X=Qa(N.firebase),H=ae(X),x=ie(X,{localCache:se({tabManager:oe()})})}catch(a){Na("Firebase config galat hai: "+(a.message||a));return}ne(H,a=>{if(ua.forEach(e=>e()),ua=[],pa.forEach(e=>s[e]=new Map),s.got.clear(),s.live.clear(),s.err=null,!a){I=null,Ba();return}if(F=ye(a.email),N.phones.length&&!N.phones.includes(F)){Fa(H),Ba("Yeh number is khate mein shamil nahi hai.");return}I=a.uid,document.body.classList.remove("locked"),w(z(v("members",I),{phone:F,lastSeen:Date.now()},{merge:!0})),pa.forEach(ge),s.tab="home",s.partyId=null,R("home")}),addEventListener("online",()=>{s.online=!0,aa()}),addEventListener("offline",()=>{s.online=!1,aa()})}function ge(a){ua.push(le(ya(a),{includeMetadataChanges:!0},e=>{let t=new Map;e.docs.forEach(n=>t.set(n.id,{id:n.id,...n.data()})),s[a]=t,s.got.add(a),e.metadata.fromCache?s.live.delete(a):s.live.add(a),aa()},e=>{s.err=e.code||"error",aa()}))}function Na(a){document.body.classList.add("locked"),b("#view").innerHTML=`<section class="card" style="display:grid;gap:12px"><h2>Pehli baar setup</h2>
+    <p class="muted" style="margin:0">Is app ko Firebase project se jodna hai. Firebase console mein Project settings \u2192 Your apps \u2192 Web app \u2192 <b>firebaseConfig</b> copy karke yahan paste karein.</p>
+    ${a?`<div class="banner">${c(a)}</div>`:""}
+    <textarea id="cfgIn" rows="8" placeholder='{ apiKey: "...", authDomain: "...", projectId: "...", appId: "..." }'></textarea>
+    <button class="btn pri" id="cfgGo">Save karein</button></section>`,b("#cfgGo").onclick=()=>{let e=b("#cfgIn").value,t=i=>{let o=e.match(new RegExp(i+`\\s*[:=]\\s*["']([^"']+)["']`));return o?o[1]:""},n={apiKey:t("apiKey"),authDomain:t("authDomain"),projectId:t("projectId"),storageBucket:t("storageBucket"),messagingSenderId:t("messagingSenderId"),appId:t("appId")};if(!n.apiKey||!n.projectId||!n.appId){f("apiKey, projectId aur appId nahi mile. Poora config paste karein.");return}try{localStorage.setItem("hisab_cfg",JSON.stringify(n))}catch{}location.reload()},wa()}function Ba(a){document.body.classList.add("locked");let e=N.phones;b("#view").innerHTML=`<section class="card login" style="display:grid;gap:14px">
+    <div class="lockicon">${h.lock}</div><h2 style="text-align:center">Khata kholein</h2>
+    ${a?`<div class="banner">${c(a)}</div>`:""}
+    <form id="lf" style="display:grid;gap:12px">
+      <label class="f">Mobile number${e.length?`<select id="lp">${e.map(n=>`<option value="${c(n)}">${c(n)}</option>`).join("")}</select>`:'<input id="lp" type="tel" inputmode="numeric" maxlength="10" required>'}</label>
+      <label class="f">PIN (6 ank)<input id="lpin" type="password" inputmode="numeric" autocomplete="current-password" minlength="6" maxlength="12" required></label>
+      <label class="f hidden" id="lpin2w">PIN dobara<input id="lpin2" type="password" inputmode="numeric" autocomplete="new-password" minlength="6" maxlength="12"></label>
+      <button class="btn pri" id="lgo">Login</button>
+      <span class="status" id="lst" role="status"></span></form>
+    <button class="btn ghost" id="lmode">Pehli baar? Is number ka PIN banayein</button></section>`;let t=!1;try{let n=localStorage.getItem("hisab_last_phone");n&&b("#lp").tagName==="SELECT"&&e.includes(n)&&(b("#lp").value=n)}catch{}b("#lmode").onclick=()=>{t=!t,b("#lpin2w").classList.toggle("hidden",!t),b("#lgo").textContent=t?"PIN banayein":"Login",b("#lmode").textContent=t?"PIN pehle se hai? Login karein":"Pehli baar? Is number ka PIN banayein"},b("#lf").addEventListener("submit",async n=>{n.preventDefault();let i=b("#lp").value.replace(/\D/g,""),o=b("#lpin").value.trim(),l=b("#lst");if(!/^\d{10}$/.test(i)){l.textContent="10 ank ka mobile number dalein.";return}if(!/^\d{6,12}$/.test(o)){l.textContent="PIN 6 se 12 ank ka hona chahiye.";return}if(t&&o!==b("#lpin2").value.trim()){l.textContent="Dono PIN alag hain.";return}let r=i+"@"+N.domain;b("#lgo").disabled=!0,l.className="status",l.textContent=t?"PIN ban raha hai\u2026":"Login ho raha hai\u2026";try{t?await te(H,r,o):await ee(H,r,o);try{localStorage.setItem("hisab_last_phone",i)}catch{}}catch(d){let m=d&&d.code||"";l.className="status err",l.textContent=m.includes("invalid-credential")||m.includes("wrong-password")||m.includes("user-not-found")?"Number ya PIN galat hai.":m.includes("email-already-in-use")?"Is number ka PIN pehle se bana hai. Login karein.":m.includes("too-many-requests")?"Bahut baar galat PIN. Thodi der baad koshish karein.":m.includes("network")?"Internet nahi hai. Pehli baar login ke liye internet chahiye.":m.includes("operation-not-allowed")?"Firebase mein Email/Password login chalu nahi hai.":"Login nahi hua ("+m+").",b("#lgo").disabled=!1}}),wa()}var ha=window.SpeechRecognition||window.webkitSpeechRecognition,M=null;function oa(a){document.querySelectorAll(".mic").forEach(e=>{e.classList.toggle("on",a),e.setAttribute("aria-label",a?"Bolna band karein":"Bol kar likhein")})}function va(){if(M)try{M.stop()}catch{}}function Ca(a){if(M){va();return}try{M=new ha,M.lang="hi-IN",M.interimResults=!0,M.continuous=!0;let e=a.value.trim(),t="";M.onresult=n=>{let i="";for(let o=n.resultIndex;o<n.results.length;o++){let l=n.results[o];l.isFinal?t+=l[0].transcript+" ":i+=l[0].transcript}a.value=(e+" "+t+i).trim()},M.onerror=n=>{n.error==="not-allowed"?f("Mic ki anumati dein (browser settings)."):n.error==="network"&&f("Bolne ke liye internet chahiye.")},M.onend=()=>{M=null,oa(!1)},M.start(),oa(!0)}catch{M=null,oa(!1),f("Mic shuru nahi hua. Keyboard ka mic use karein.")}}function Ua(){return sa||(sa=ue(pe(X,{backend:new he}),{model:N.aiModel,generationConfig:{responseMimeType:"application/json",temperature:.1}})),sa}function ka(a){let e=String(a&&(a.message||a.code)||"");return navigator.onLine?/429|quota|exhaust/i.test(e)?"Aaj ki free AI seema poori ho gayi. Entries khud bharein ya kal try karein.":/api-not-enabled|not been used|disabled|403/i.test(e)?"Firebase mein AI Logic chalu nahi hai. Setup guide ka step 6 dekhein.":/json/i.test(e)?"Isme se entries samajh nahi aayi. Khud bharein ya dobara try karein.":"AI se jawab nahi mila. Dobara try karein.":"Iske liye internet chahiye. Entry khud bhar sakte hain."}function Oa(){let a=[...s.parties.values()].map(e=>e.name).slice(0,300).join(", ")||"koi nahi";return`Tum ek Indian hisab-khata (udhaar ledger) app ke liye len-den nikalte ho. Khata-malik = jo app chala raha hai.
+Aaj ki tarikh: ${K()}. Pehle se bane khate: ${a}.
+Niyam:
+- type "gave" = khata-malik ne us vyakti ko paisa/saman diya, udhaar diya, ya use payment kiya ("Paid to X", "X ko diye", "X ne liye", "X ke naam").
+- type "got" = khata-malik ko us vyakti se paisa mila ("Received from X", "X se mile", "X ne diye/lautaye", "jama").
+- name: vyakti/dukaan ka naam. Agar pehle se bane khate jaisa hai (Hindi/English spelling alag ho to bhi) to wahi spelling likho.
+- amount: sirf number (rupaye).
+- date: YYYY-MM-DD. "aaj"=aaj, "kal"=beeta hua kal, sirf din likha ho to is mahine ka. Na pata ho to null.
+- note: chhota vivran (saman, kis cheez ka). Type pakka na ho to note mein "?" lagao.
+- Total/jod/balance wali line ko alag entry mat banao.
+Sirf yeh JSON do: {"summary":"ek line","entries":[{"name":"Ramesh","type":"gave","amount":500,"date":"2026-01-05","note":"cement"}]}`}function Ya(a){try{return JSON.parse(a)}catch{}let e=String(a).match(/[\[{][\s\S]*[\]}]/);if(e)return JSON.parse(e[0]);throw new Error("json")}function Ja(a,e){return(a&&Array.isArray(a.entries)?a.entries:Array.isArray(a)?a:[]).map(n=>({proofId:e||null,name:String(n&&n.name||"").trim().slice(0,80),type:n&&n.type==="got"?"got":"gave",amount:Math.abs(Number(String(n&&n.amount||"").replace(/[^\d.]/g,"")))||0,date:/^\d{4}-\d{2}-\d{2}$/.test(n&&n.date||"")?n.date:K(),note:String(n&&n.note||"").slice(0,200)})).filter(n=>n.name||n.amount)}async function ve(a){let e=await Ua().generateContent(Oa()+`
+
+User ki line:
+"""`+a.slice(0,4e3)+'"""');return Ja(Ya(e.response.text()),null)}async function Wa(a,e,t){let n=await Ua().generateContent([{text:Oa()+`
+
+Saath mein ek file hai: hath se likhi parchi, bahi-khata ka page, bill, ya UPI/PhonePe/GPay/Paytm payment screenshot. Isme jitne bhi len-den hain sab nikalo. Payment screenshot mein ek hi entry hoti hai.`},{inlineData:{mimeType:e,data:a.split(",")[1]}}]);return Ja(Ya(n.response.text()),t)}var ke=9e5,we=a=>new Promise((e,t)=>{let n=new FileReader;n.onload=()=>e(n.result),n.onerror=t,n.readAsDataURL(a)});function Ta(a,e,t){let n=Math.min(1,e/Math.max(a.width,a.height)),i=document.createElement("canvas");i.width=Math.round(a.width*n),i.height=Math.round(a.height*n);let o=i.getContext("2d");return o.fillStyle="#fff",o.fillRect(0,0,i.width,i.height),o.drawImage(a,0,0,i.width,i.height),i.toDataURL("image/jpeg",t)}async function $e(a){if(a.type==="application/pdf"){if(a.size>650*1024)throw{code:"pdf-big"};return{data:await we(a),mime:"application/pdf",thumb:null}}if(!a.type.startsWith("image/"))throw{code:"type"};let e;try{e=await createImageBitmap(a)}catch{throw{code:"img"}}for(let[t,n]of[[1700,.8],[1500,.72],[1300,.65],[1100,.58],[900,.52]]){let i=Ta(e,t,n);if(i.length<ke)return{data:i,mime:"image/jpeg",thumb:Ta(e,260,.6)}}throw{code:"img-big"}}function Ga(a){let e=a&&a.code;return e==="pdf-big"?"PDF 650 KB se badi hai. Uski photo ya screenshot dalein.":e==="type"?"Sirf photo ya PDF dal sakte hain.":e==="img"?"Yeh photo khul nahi payi. JPG/PNG dalein.":e==="img-big"?"Photo bahut badi hai.":ba(a)}async function _a(a){let e=await $e(a),t=G("proofs"),n={name:String(a.name||"parchi").slice(0,120),contentType:e.mime,size:e.data.length,thumb:e.thumb,uploadedAt:Date.now(),by:I},i=q(x);return i.set(v("proofFiles",t),{data:e.data}),i.set(v("proofs",t),n),w(i.commit()),s.proofs.set(t,{id:t,...n}),Z.set(t,e.data),{id:t,data:e.data,mime:e.mime}}async function ra(a){if(Z.has(a))return Z.get(a);let e=await ce(v("proofFiles",a)),t=e.exists()?e.data().data:null;return t&&Z.set(a,t),t}var Ea=a=>{let[e,t]=a.split(","),n=atob(t),i=new Uint8Array(n.length);for(let o=0;o<n.length;o++)i[o]=n.charCodeAt(o);return new Blob([i],{type:e.slice(5).split(";")[0]})};function J(a,e,t){let n=e instanceof Blob?e:new Blob([e],{type:t||"text/plain"}),i=URL.createObjectURL(n),o=document.createElement("a");o.href=i,o.download=a,document.body.appendChild(o),o.click(),o.remove(),setTimeout(()=>URL.revokeObjectURL(i),5e3),f("Download shuru ho gaya")}function la(a){let e=n=>'"'+String(n??"").replace(/"/g,'""')+'"',t=[["Tarikh","Khata","Diye (Lena)","Mile (Dena)","Vivran","Parchi","Kisne joda"]];return _(a,1).forEach(n=>t.push([n.date,(s.parties.get(n.partyId)||{}).name||"",n.type==="gave"?n.amount:"",n.type==="got"?n.amount:"",n.note||"",n.proofId?"Haan":"",C(n.createdBy).replace("Aap",F)])),"\uFEFF"+t.map(n=>n.map(e).join(",")).join(`\r
+`)}var ca=0;function aa(){ca||(ca=requestAnimationFrame(()=>{ca=0,P()}))}function R(a,e=null){I&&(s.tab=a,s.partyId=e,document.querySelectorAll("#tabs button").forEach(t=>t.classList.toggle("on",t.dataset.tab===a)),Se(),window.scrollTo(0,0))}function wa(){let a=b("#sync"),e="",t="Jud raha hai\u2026";I?s.err?(e="err",t=s.err.includes("permission")?"Anumati nahi":"Sync ruka"):s.online?s.live.size===pa.length&&(e="live",t="Live sync"):(e="slow",t="Offline \xB7 baad mein sync"):(e="",t=N.firebase?"Login karein":"Setup"),a.className="sync "+e,a.querySelector("span").textContent=t}function Se(){let a=b("#view");s.tab==="khate"&&s.partyId?a.innerHTML=Me():s.tab==="khate"?a.innerHTML=`<div class="toolbar"><input id="pq" type="search" placeholder="Naam ya phone se khojein" value="${c(s.pq)}" aria-label="Khata khojein"><button class="btn pri" data-act="new-party">${h.plus}Naya khata</button></div><div id="vbody"></div>`:s.tab==="entries"?a.innerHTML=`<div class="card" style="display:grid;gap:10px"><div class="toolbar"><input id="eq" type="search" placeholder="Naam ya vivran khojein" value="${c(s.q)}" aria-label="Entry khojein"><select id="et" aria-label="Prakar"><option value="all">Sabhi</option><option value="gave">Sirf diye</option><option value="got">Sirf mile</option></select></div><div class="row2"><label class="f">Se (tarikh)<input type="date" id="ef1" value="${c(s.from)}"></label><label class="f">Tak (tarikh)<input type="date" id="ef2" value="${c(s.to)}"></label></div></div><div id="vbody"></div>`:a.innerHTML='<div id="vbody"></div>',Be(),P()}function P(){wa();let a=b("#vbody");if(!a||!I)return;if(s.err&&s.err.includes("permission")){a.innerHTML=`<div class="banner">Is number (${c(F)}) ko khata dekhne ki anumati nahi hai. Firebase \u2192 Firestore \u2192 Rules mein yeh number jodein.</div><button class="btn" data-act="logout">Logout</button>`;return}if(s.got.size<3&&!s.err){a.innerHTML='<div class="card empty"><p class="muted" style="margin:0">Khata khul raha hai\u2026</p></div>';return}let e=s.online?"":'<div class="banner info">Internet nahi hai. Aap entry jod sakte hain; internet aate hi sabhi phone par apne aap pahunch jayegi.</div>',t=s.tab==="home"?je():s.tab==="khate"?s.partyId?Le():xe():s.tab==="entries"?qe():s.tab==="proofs"?Pe():Ne();a.innerHTML=e+t,s.tab==="khate"&&s.partyId&&Ae()}function Ie(a){return Math.abs(a)<.005?'<span class="chip zero">Barabar</span>':a>0?`<span class="chip good">${g(a)}<small>Lena hai</small></span>`:`<span class="chip bad">${g(a)}<small>Dena hai</small></span>`}function $a(a,e){let t=s.parties.get(a.partyId),n=C(a.createdBy),i=e?a.note||(a.type==="gave"?"Diye":"Mile"):t?t.name:"(khata hata diya)",o=[ma(a.date),!e&&a.note?c(a.note):"",a.proofId?h.clip+" parchi":"",n?"by "+c(n):""].filter(Boolean).join(" \xB7 ");return`<button class="erow" data-act="edit-entry" data-id="${c(a.id)}"><span class="etype ${a.type}">${a.type==="gave"?h.up:h.down}</span>
+    <span class="emain"><span class="ename">${c(i)}</span><span class="esub">${o}</span></span>
+    <span class="eamt ${a.type}-t">${g(a.amount)}<small>${a.type==="gave"?"Diye":"Mile"}</small></span></button>`}function je(){let a=fa(),e=0,t=0,n=0,i=0;for(let p of s.parties.values()){let k=(a.get(p.id)||{}).bal||0;k>.004?(e+=k,n++):k<-.004&&(t+=-k,i++)}let o=e-t,l=new Date,r=[];for(let p=5;p>=0;p--){let k=new Date(l.getFullYear(),l.getMonth()-p,1);r.push({key:k.getFullYear()+"-"+da(k.getMonth()+1),label:k.toLocaleDateString("en-IN",{month:"short"}),gave:0,got:0})}let d=Object.fromEntries(r.map(p=>[p.key,p]));for(let p of s.entries.values()){let k=d[(p.date||"").slice(0,7)];k&&(k[p.type]+=+p.amount||0)}let m=r[5],S=Math.max(1,...r.map(p=>Math.max(p.gave,p.got))),u=p=>Math.round(p/S*100),T=_([...s.entries.values()]).slice(0,8),y=[...s.parties.values()].map(p=>({p,b:(a.get(p.id)||{}).bal||0})).filter(p=>Math.abs(p.b)>.004).sort((p,k)=>Math.abs(k.b)-Math.abs(p.b)).slice(0,5),A=`<div class="quick"><button class="qbtn primary" data-act="new-entry">${h.plus}Nayi entry</button><button class="qbtn" data-act="scan">${h.cam}Parchi scan</button><button class="qbtn" data-act="voice">${h.mic}Bol kar likho</button></div>`;return!s.entries.size&&!s.parties.size?A+`<div class="card empty">${h.book}<h2>Aapka khata taiyar hai</h2><p class="muted" style="margin:0;max-width:44ch">Pehli entry jodiye. Kisi ka naam likhte hi uska khata apne aap ban jayega. Purani parchi ki photo dalenge to AI usse entries bana dega aur photo saboot ke roop mein save rahegi.</p><button class="btn pri" data-act="new-entry">${h.plus}Pehli entry jodein</button></div>`:`<section class="hero" aria-label="Kul hisab"><div class="hrow"><div><div class="k">Aapko lene hain \xB7 ${n} log</div><div class="v good num">${g(e)}</div></div><div><div class="k">Aapko dene hain \xB7 ${i} log</div><div class="v bad num">${g(t)}</div></div></div>
+      <div class="net"><span class="k">Kul hisab (lena \u2212 dena)</span><b class="num">${o<0?"\u2212":""}${g(o)}</b></div></section>
+    ${A}
+    <div class="tiles"><div class="tile"><div class="k">Is mahine diye</div><div class="v gave-t num">${g(m.gave)}</div></div><div class="tile"><div class="k">Is mahine mile</div><div class="v got-t num">${g(m.got)}</div></div></div>
+    <section class="card"><div class="sec-h"><h3>Pichhle 6 mahine</h3><div class="legend"><span><i style="background:var(--bad)"></i>Diye</span><span><i style="background:var(--good)"></i>Mile</span></div></div>
+      <div class="chart"><div class="cmax num">Upar ki line: ${g(S)}</div><div class="cols">${r.map(p=>`<div class="col"><span class="bar gave" style="height:${u(p.gave)}%" title="${p.label}: diye ${g(p.gave)}"></span><span class="bar got" style="height:${u(p.got)}%" title="${p.label}: mile ${g(p.got)}"></span></div>`).join("")}</div><div class="clabels">${r.map(p=>`<span>${p.label}</span>`).join("")}</div></div></section>
+    ${y.length?`<section class="card"><div class="sec-h"><h3>Sabse bada baaki</h3><button class="btn sm ghost" data-act="tab" data-tab="khate">Sab khate</button></div><div class="list">${y.map(p=>Va(p.p,a)).join("")}</div></section>`:""}
+    <section class="card"><div class="sec-h"><h3>Haal ki entries</h3><button class="btn sm ghost" data-act="tab" data-tab="entries">Sab dekhein</button></div><div class="list">${T.map(p=>$a(p)).join("")||'<p class="muted">Abhi koi entry nahi.</p>'}</div></section>`}function Va(a,e){let t=e.get(a.id)||{bal:0,count:0,last:""};return`<button class="prow" data-act="open-party" data-id="${c(a.id)}"><span class="avatar">${c((a.name||"?").trim().charAt(0).toUpperCase())}</span><span class="emain"><span class="ename">${c(a.name)}</span><span class="esub">${t.count} entries${t.last?" \xB7 aakhri "+ma(t.last):""}${a.phone?" \xB7 "+c(a.phone):""}</span></span>${Ie(t.bal)}</button>`}function xe(){let a=fa(),e=D(s.pq),t=[...s.parties.values()].filter(n=>!e||D(n.name).includes(e)||String(n.phone||"").includes(e)).sort((n,i)=>((a.get(i.id)||{}).last||"").localeCompare((a.get(n.id)||{}).last||"")||String(n.name).localeCompare(i.name));return s.parties.size?`<section class="card"><div class="sec-h"><h3>${t.length} khate</h3></div><div class="list">${t.map(n=>Va(n,a)).join("")||'<p class="muted">Is naam se koi khata nahi mila.</p>'}</div></section>`:`<div class="card empty">${h.book}<p class="muted" style="margin:0">Abhi koi khata nahi. "Naya khata" dabayein ya seedhe entry jodein.</p></div>`}function Me(){return`<div class="toolbar"><button class="btn ghost" data-act="tab" data-tab="khate">${h.back}Sab khate</button></div><section class="card phead" id="phead"></section>
+    <div class="card" style="display:grid;gap:10px"><div class="row2"><label class="f">Se (tarikh)<input type="date" id="pf1" value="${c(s.pfrom)}"></label><label class="f">Tak (tarikh)<input type="date" id="pf2" value="${c(s.pto)}"></label></div></div><div id="vbody"></div>`}function Ae(){let a=s.parties.get(s.partyId),e=b("#phead");if(!e)return;if(!a){e.innerHTML='<p class="muted" style="margin:0">Yeh khata hata diya gaya hai.</p>';return}let t=(fa().get(a.id)||{bal:0}).bal,n=Math.abs(t)<.005?"zero":t>0?"good":"bad",i=`Namaste ${a.name} ji, hamare hisab ke anusaar ${t>0?"aapki taraf "+g(t)+" baaki hai":t<0?"hamari taraf "+g(t)+" baaki hai":"hisab barabar hai"}. Dhanyavaad.`,o=String(a.phone||"").replace(/\D/g,""),l="https://wa.me/"+(o?o.length===10?"91"+o:o:"")+"?text="+encodeURIComponent(i);e.innerHTML=`<div class="top2"><span class="avatar">${c(String(a.name).charAt(0).toUpperCase())}</span><div class="emain"><h2>${c(a.name)}</h2><span class="esub">${[a.phone,a.note].filter(Boolean).map(c).join(" \xB7 ")}</span></div><button class="btn sm" style="margin-left:auto" data-act="edit-party" data-id="${c(a.id)}">Badlein</button></div>
+    <div class="bigbal ${n}"><span>${n==="zero"?"Hisab barabar":n==="good"?"Aapko lene hain":"Aapko dene hain"}</span><b class="num">${g(t)}</b></div>
+    <div class="twobtn"><button class="btn red" data-act="new-entry" data-party="${c(a.id)}" data-type="gave">${h.up}Maine diye</button><button class="btn green" data-act="new-entry" data-party="${c(a.id)}" data-type="got">${h.down}Mujhe mile</button></div>
+    <div class="toolbar"><a class="btn sm" href="${c(l)}" target="_blank" rel="noopener">${h.wa}WhatsApp yaad dilayein</a><button class="btn sm" data-act="party-csv">${h.dl}Hisab download (Excel)</button></div>`}var Sa=(a,e,t)=>(!e||a.date>=e)&&(!t||a.date<=t);function Le(){let a=s.parties.get(s.partyId);if(!a)return"";let e=_([...s.entries.values()].filter(r=>r.partyId===a.id),1),t=0,i=e.map(r=>(t+=r.type==="gave"?+r.amount:-r.amount,{e:r,run:t})).filter(r=>Sa(r.e,s.pfrom,s.pto)).reverse();if(!e.length)return'<div class="card empty"><p class="muted" style="margin:0">Is khate mein abhi koi entry nahi.</p></div>';let o=0,l=0;return i.forEach(r=>r.e.type==="gave"?o+=+r.e.amount:l+=+r.e.amount),`<section class="card"><div class="ledger-h"><span>Tarikh / vivran</span><span>Diye</span><span>Mile</span></div>
+    <div class="list">${i.map(({e:r,run:d})=>`<button class="lrow" data-act="edit-entry" data-id="${c(r.id)}"><span class="emain"><span class="ename">${ma(r.date)}${r.proofId?" "+h.clip:""}</span><span class="esub">${c(r.note||"\u2014")}</span><span class="run num">Baaki: ${d<0?"\u2212":""}${g(d)}${C(r.createdBy)?" \xB7 by "+c(C(r.createdBy)):""}</span></span>
+      <span class="c gave-t">${r.type==="gave"?g(r.amount):""}</span><span class="c got-t">${r.type==="got"?g(r.amount):""}</span></button>`).join("")||'<p class="muted">Is tarikh mein koi entry nahi.</p>'}</div>
+    <div class="ledger-h" style="border-top:1px solid var(--line);border-bottom:0;padding-top:8px;margin-top:4px"><span>Jod (${i.length})</span><span class="gave-t num">${g(o)}</span><span class="got-t num">${g(l)}</span></div></section>`}function Xa(){let a=D(s.q);return _([...s.entries.values()].filter(e=>(s.ftype==="all"||e.type===s.ftype)&&Sa(e,s.from,s.to)&&(!a||D((s.parties.get(e.partyId)||{}).name).includes(a)||D(e.note).includes(a))))}function qe(){let a=Xa(),e=0,t=0;return a.forEach(n=>n.type==="gave"?e+=+n.amount:t+=+n.amount),`<div class="tiles"><div class="tile"><div class="k">Diye (${a.filter(n=>n.type==="gave").length})</div><div class="v gave-t num">${g(e)}</div></div><div class="tile"><div class="k">Mile (${a.filter(n=>n.type==="got").length})</div><div class="v got-t num">${g(t)}</div></div></div>
+   <section class="card"><div class="sec-h"><h3>${a.length} entries</h3><button class="btn sm" data-act="entries-csv">${h.dl}Excel</button></div><div class="list">${a.slice(0,400).map(n=>$a(n)).join("")||'<p class="muted">Koi entry nahi mili.</p>'}</div>
+   ${a.length>400?'<p class="muted small">Pehli 400 dikh rahi hain. Tarikh se filter karein ya Excel download karein.</p>':""}</section>`}function Pe(){let a=[...s.proofs.values()].sort((n,i)=>(i.uploadedAt||0)-(n.uploadedAt||0)),e=n=>[...s.entries.values()].filter(i=>i.proofId===n).length,t=`<section class="card" style="display:grid;gap:10px"><h3>Parchi, bill, payment screenshot</h3><p class="muted" style="margin:0">Photo dalte hi woh saboot ke roop mein save hoti hai, aur AI usme likhe len-den padh kar entries bana deta hai. Save karne se pehle aap sab jaanch sakte hain.</p><div class="toolbar"><button class="btn pri" data-act="scan">${h.cam}Parchi upload / scan</button></div></section>`;return a.length?t+`<div class="pgrid">${a.map(n=>{let i=e(n.id);return`<button class="pcard" data-act="open-proof" data-id="${c(n.id)}"><div class="pthumb">${n.thumb?`<img src="${c(n.thumb)}" alt="${c(n.name)}" loading="lazy">`:h.doc}</div><div class="pmeta"><b>${i?i+" entries":"Entry nahi judi"}</b><span class="muted">${new Date(n.uploadedAt||0).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</span></div></button>`}).join("")}</div>`:t+'<div class="card empty"><p class="muted" style="margin:0">Abhi koi parchi upload nahi hui.</p></div>'}function Ne(){let a=[...s.trash.values()].sort((n,i)=>(i.deletedAt||0)-(n.deletedAt||0)),e=n=>n.kind==="party"?"Khata: "+c(n.data&&n.data.name):n.kind==="entry"?c((s.parties.get(n.data&&n.data.partyId)||{}).name||"Entry")+" \xB7 "+g(n.data&&n.data.amount)+" "+(n.data&&n.data.type==="gave"?"diye":"mile"):"Parchi: "+c(n.data&&n.data.name),t=s.members.get(I)||{};return`<section class="card" style="display:grid;gap:10px"><h3>Aap</h3>
+      <div class="kv"><span class="muted">Number</span><span>${c(F)}</span></div>
+      <div class="toolbar"><input id="myname" placeholder="Aapka naam (entries par dikhega)" value="${c(t.name||"")}" maxlength="30" aria-label="Aapka naam"><button class="btn" data-act="save-name">Save</button><button class="btn danger" data-act="logout">Logout</button></div></section>
+    <section class="card" style="display:grid;gap:10px"><h3>Backup aur download</h3>
+      <p class="muted" style="margin:0">Data Google ke Firebase cloud mein rehta hai aur har phone mein bhi ek copy rehti hai. Fir bhi hafte mein ek baar backup file download kar lein.</p>
+      <div class="toolbar"><button class="btn pri" data-act="backup">${h.dl}Backup (bina photo)</button><button class="btn" data-act="backup-full">${h.dl}Backup (photo ke saath)</button><button class="btn" data-act="all-csv">${h.dl}Sab entries (Excel)</button>
+      <label class="btn filebtn">Backup se wapas laayein<input type="file" accept=".json,application/json" id="restoreIn"></label></div>
+      <p class="muted small" style="margin:0">${s.parties.size} khate \xB7 ${s.entries.size} entries \xB7 ${s.proofs.size} parchiyan</p></section>
+    <section class="card" style="display:grid;gap:8px"><h3>Suraksha</h3>
+      <ul class="steps"><li>Sirf aapke teen number PIN se login kar sakte hain. Kisi aur number se data na dikhega na badlega.</li>
+      <li>Play Store se kuch install nahi hota, isliye virus ka khatra nahi. Upload ki gayi photo sirf dikhayi jaati hai, chalayi nahi jaati.</li>
+      <li>Hatayi gayi entry Trash mein jaati hai, wahan se wapas la sakte hain. Har entry par likha hota hai kisne joda.</li></ul></section>
+    <section class="card"><div class="sec-h"><h3>Trash (${a.length})</h3>${a.length?'<button class="btn sm danger" data-act="empty-trash">Khali karein</button>':""}</div>
+      <div class="list">${a.slice(0,100).map(n=>`<div class="erow"><span class="etype gave">${h.doc}</span><span class="emain"><span class="ename">${e(n)}</span><span class="esub">${new Date(n.deletedAt||0).toLocaleString("en-IN")}</span></span><button class="btn sm" data-act="restore" data-id="${c(n.id)}">Wapas laayein</button></div>`).join("")||'<p class="muted" style="margin:0">Trash khali hai.</p>'}</div></section>`}function Be(){let a=(t,n,i)=>{let o=b(t);o&&o.addEventListener(n,i)};a("#pq","input",t=>{s.pq=t.target.value,P()}),a("#eq","input",t=>{s.q=t.target.value,P()});let e=b("#et");e&&(e.value=s.ftype,e.addEventListener("change",t=>{s.ftype=t.target.value,P()})),a("#ef1","change",t=>{s.from=t.target.value,P()}),a("#ef2","change",t=>{s.to=t.target.value,P()}),a("#pf1","change",t=>{s.pfrom=t.target.value,P()}),a("#pf2","change",t=>{s.pto=t.target.value,P()})}document.addEventListener("change",a=>{a.target&&a.target.id==="restoreIn"&&Ee(a.target.files[0])});document.addEventListener("click",a=>{let e=a.target.closest("[data-act],[data-tab]");if(!e)return;if(e.closest("#tabs")){R(e.dataset.tab);return}if(!I)return;let t=e.dataset.act,n=e.dataset.id;if(t==="tab")R(e.dataset.tab);else if(t==="open-party")s.pfrom=s.pto="",R("khate",n);else if(t==="new-entry")W({partyId:e.dataset.party,type:e.dataset.type});else if(t==="voice")W({voice:!0});else if(t==="edit-entry")W({id:n});else if(t==="scan")Ce();else if(t==="new-party")Da();else if(t==="edit-party")Da(n);else if(t==="open-proof")Te(n);else if(t==="party-csv"){let i=s.parties.get(s.partyId);i&&J("hisab-"+String(i.name).replace(/[^\wऀ-ॿ]+/g,"-")+".csv",la([...s.entries.values()].filter(o=>o.partyId===i.id&&Sa(o,s.pfrom,s.pto))),"text/csv")}else if(t==="entries-csv")J("entries-"+K()+".csv",la(Xa()),"text/csv");else if(t==="all-csv")J("hisab-sab-entries-"+K()+".csv",la([...s.entries.values()]),"text/csv");else if(t==="backup")Ha(!1);else if(t==="backup-full")Ha(!0);else if(t==="restore")De(n);else if(t==="empty-trash")He();else if(t==="logout")O("Logout karein?","Dobara kholne ke liye number aur PIN lagega.","Logout",!1).then(i=>i&&Fa(H));else if(t==="save-name"){let i=(b("#myname").value||"").trim().slice(0,30);w(z(v("members",I),{name:i},{merge:!0})),f("Naam save ho gaya")}});function W({id:a,partyId:e,type:t,voice:n,proofId:i,prefill:o}={}){let l=a?s.entries.get(a):null;if(a&&!l){f("Yeh entry ab maujood nahi.");return}let r=o||{},d=s.parties.get(l?l.partyId:e),m=l?l.type:r.type||t||"gave",S=null,u=l?l.proofId:i||null,T=l?"":`<div class="smart"><label class="f" for="smt">Bol kar ya likh kar batayein</label>
+      <div class="srow"><textarea id="smt" rows="2" placeholder="jaise: Ramesh ko 500 diye kal, cement ke liye"></textarea>${ha?`<button type="button" class="mic" id="micb" aria-label="Bol kar likhein">${h.mic}</button>`:""}</div>
+      <button type="button" class="btn sm pri" id="smgo">${h.spark}AI se form bharwayein</button>
+      <span class="status" id="smst">${ha?"Mic dabakar Hindi mein boliye.":"Tip: keyboard ka mic button dabakar bhi bol sakte hain."}</span></div>`,y=U(`<div class="mhead"><h2>${l?"Entry badlein":"Nayi entry"}</h2><button class="x" data-close aria-label="Band karein">\xD7</button></div>${T}
+    <form id="ef" style="display:grid;gap:12px">
+      <label class="f">Khata (vyakti / dukaan ka naam)<input id="fn" list="plist" required autocomplete="off" maxlength="80" value="${c(d?d.name:r.name||"")}"></label>
+      <datalist id="plist">${[...s.parties.values()].map(j=>`<option value="${c(j.name)}"></option>`).join("")}</datalist>
+      <div class="seg" role="radiogroup" aria-label="Len-den ka prakar">
+        <input type="radio" name="ty" id="t-g" value="gave" ${m==="gave"?"checked":""}><label for="t-g">Maine diye<small>Unse lena hai</small></label>
+        <input type="radio" name="ty" id="t-l" value="got" ${m==="got"?"checked":""}><label for="t-l">Mujhe mile<small>Unhe dena / wapas mila</small></label></div>
+      <div class="row2"><label class="f">Rakam (\u20B9)<input id="fa" type="number" inputmode="decimal" step="0.01" min="0.01" required value="${c(l?l.amount:r.amount||"")}"></label><label class="f">Tarikh<input id="fd" type="date" required value="${c(l?l.date:r.date||K())}"></label></div>
+      <label class="f">Vivran (kis cheez ka)<textarea id="fo" rows="2" maxlength="200">${c(l?l.note:r.note||"")}</textarea></label>
+      <div id="pbox"></div>
+      ${l?`<p class="muted small" style="margin:0">${C(l.createdBy)?"Joda: "+c(C(l.createdBy))+" \xB7 ":""}${new Date(l.createdAt||0).toLocaleString("en-IN")}</p>`:""}
+      <div class="mfoot">${l?'<button type="button" class="btn danger" id="fdel">Hatayein</button>':"<span></span>"}<button type="submit" class="btn pri grow" id="fsave">Save karein</button></div>
+      <span class="status" id="fst" role="status"></span></form>`),A=y.querySelector("#pbox");function p(){let j=u&&s.proofs.get(u);S?A.innerHTML=`<div class="proofbox">${S.type.startsWith("image/")?`<img src="${URL.createObjectURL(S)}" alt="">`:h.doc}<span class="emain"><b>Naya saboot</b><span class="esub">${c(S.name)}</span></span><button type="button" class="btn sm" id="prm">Hatayein</button></div>`:u?A.innerHTML=`<div class="proofbox">${j&&j.thumb?`<img src="${c(j.thumb)}" alt="">`:h.doc}<span class="emain"><b>Parchi judi hai</b><span class="esub">${j?c(j.name):""}</span></span><button type="button" class="btn sm" id="prm">Alag karein</button></div>`:A.innerHTML=`<label class="btn filebtn" style="width:100%">${h.cam}Parchi / payment photo jodein (saboot)<input type="file" id="pin" accept="image/*,application/pdf"></label>`;let $=A.querySelector("#prm");$&&($.onclick=()=>{S=null,u=null,p()});let L=A.querySelector("#pin");L&&(L.onchange=()=>{S=L.files[0]||null,p()})}p();let k=y.querySelector("#smt"),E=y.querySelector("#smst"),ea=y.querySelector("#micb");ea&&(ea.onclick=()=>Ca(k));let V=y.querySelector("#smgo");V&&(V.onclick=async()=>{va();let j=k.value.trim();if(!j){E.textContent="Pehle kuch bolein ya likhein.";return}V.disabled=!0,E.className="status",E.textContent="AI samajh raha hai\u2026";try{let $=await ve(j);if(!$.length)E.textContent="Isme koi len-den nahi mila. Naam, rakam aur diye/mile saaf bolein.";else if($.length===1){let L=$[0];y.querySelector("#fn").value=L.name,y.querySelector("#fa").value=L.amount||"",y.querySelector("#fd").value=L.date,y.querySelector("#fo").value=L.note,y.querySelector(L.type==="got"?"#t-l":"#t-g").checked=!0,E.textContent="Form bhar diya. Jaanch kar Save dabayein."}else{Ia($,"Aapki baat se "+$.length+" entries mili");return}}catch($){E.className="status err",E.textContent=ka($)}V.disabled=!1}),n&&k&&(setTimeout(()=>k.focus(),50),ea&&Ca(k));let ja=y.querySelector("#fdel");ja&&(ja.onclick=async()=>{if(!await O("Entry hatayein?","Yeh entry Trash mein chali jayegi. Backup tab se wapas la sakte hain.","Hatayein"))return;let j=q(x);Q("entry",a,j),w(j.commit()),f("Entry Trash mein bhej di")}),y.querySelector("#ef").addEventListener("submit",async j=>{j.preventDefault();let $=y.querySelector("#fst"),L=y.querySelector("#fsave"),xa=y.querySelector("#fn").value.trim(),ta=Math.round(Number(y.querySelector("#fa").value)*100)/100,na=y.querySelector("#fd").value,Ma=y.querySelector("input[name=ty]:checked").value,Aa=y.querySelector("#fo").value.trim();if(!xa){$.textContent="Naam likhein.";return}if(!(ta>0)){$.textContent="Sahi rakam likhein.";return}if(!/^\d{4}-\d{2}-\d{2}$/.test(na)){$.textContent="Tarikh chunein.";return}L.disabled=!0;let ia=u;if(S){$.className="status",$.textContent="Parchi taiyar ho rahi hai\u2026";try{ia=(await _a(S)).id}catch(Za){L.disabled=!1,$.className="status err",$.textContent=Ga(Za);return}}let La=za(xa),qa=Date.now();w(l?Ka(v("entries",a),{partyId:La,type:Ma,amount:ta,date:na,note:Aa,proofId:ia||null,updatedAt:qa,updatedBy:I}):z(v("entries",G("entries")),{partyId:La,type:Ma,amount:ta,date:na,note:Aa,proofId:ia||null,createdAt:qa,createdBy:I})),B(),f(l?"Badlav save ho gaya":s.online?"Entry jud gayi \xB7 sabhi phone par update":"Entry jud gayi \xB7 internet aate hi sync hogi")})}function Da(a){let e=a?s.parties.get(a):null,t=U(`<div class="mhead"><h2>${e?"Khata badlein":"Naya khata"}</h2><button class="x" data-close aria-label="Band karein">\xD7</button></div>
+    <form id="pf" style="display:grid;gap:12px"><label class="f">Naam<input id="pn" required maxlength="80" value="${c(e?e.name:"")}"></label>
+    <label class="f">Mobile number (WhatsApp ke liye)<input id="pp" type="tel" inputmode="tel" maxlength="15" value="${c(e?e.phone:"")}"></label>
+    <label class="f">Note (pata, rishta\u2026)<input id="pnote" maxlength="120" value="${c(e?e.note:"")}"></label>
+    <div class="mfoot">${e?'<button type="button" class="btn danger" id="pdel">Khata hatayein</button>':"<span></span>"}<button class="btn pri grow">Save karein</button></div><span class="status" id="pst"></span></form>`);t.querySelector("#pf").addEventListener("submit",i=>{i.preventDefault();let o=t.querySelector("#pn").value.trim(),l=t.querySelector("#pp").value.trim(),r=t.querySelector("#pnote").value.trim(),d=ga(o);if(d&&(!e||d.id!==e.id)){t.querySelector("#pst").textContent="Is naam ka khata pehle se hai.";return}if(e)w(Ka(v("parties",e.id),{name:o,phone:l,note:r})),B(),f("Save ho gaya");else{let m=G("parties");w(z(v("parties",m),{name:o,phone:l,note:r,createdAt:Date.now(),createdBy:I})),B(),R("khate",m),f("Khata ban gaya")}});let n=t.querySelector("#pdel");n&&(n.onclick=async()=>{let i=[...s.entries.values()].filter(r=>r.partyId===e.id);if(!await O("Khata hatayein?",`${c(e.name)} ka khata aur uski ${i.length} entries Trash mein jayengi. Wahan se wapas la sakte hain.`,"Hatayein"))return;let o=q(x),l=0;for(let r of i)Q("entry",r.id,o),++l%200===0&&(w(o.commit()),o=q(x));Q("party",e.id,o),w(o.commit()),R("khate"),f("Khata Trash mein bhej diya")})}function Ce(){let a=U(`<div class="mhead"><h2>Parchi upload karein</h2><button class="x" data-close aria-label="Band karein">\xD7</button></div>
+    <p class="muted" style="margin:0">Hath se likhi parchi, bahi ka purana page, bill ya UPI screenshot ki photo dalein. Photo saboot ke roop mein save hogi aur AI usme se entries nikal kar aapko dikhayega.</p>
+    <label class="btn pri filebtn" style="padding:16px">${h.cam}Photo kheenchein / chunein<input type="file" id="sin" accept="image/*,application/pdf" multiple></label>
+    <div id="slog" class="status" role="status"></div>`);a.querySelector("#sin").onchange=async e=>{let t=[...e.target.files].slice(0,10);if(!t.length)return;let n=a.querySelector("#slog");a.querySelector(".filebtn").classList.add("hidden");let i=[],o=[],l=null;for(let r=0;r<t.length;r++){let d=t.length>1?`(${r+1}/${t.length}) `:"";try{n.textContent=d+"Photo save ho rahi hai\u2026";let m=await _a(t[r]);if(l=m.id,!navigator.onLine){o.push(d+"Photo save ho gayi. Internet nahi hai, isliye entries khud jodein.");continue}n.textContent=d+"AI parchi padh raha hai\u2026 (10\u201330 second)";try{let S=await Wa(m.data,m.mime,m.id);i.push(...S),S.length||o.push(d+"isme koi len-den nahi mila")}catch(S){o.push(d+ka(S))}}catch(m){o.push(d+Ga(m))}}if(i.length)Ia(i,"Parchi se "+i.length+" entries mili",o);else if(n.innerHTML=o.map(c).join("<br>")||"Ho gaya.",l){let r=document.createElement("button");r.className="btn pri",r.textContent="Is parchi ke saath entry jodein",r.onclick=()=>W({proofId:l}),a.appendChild(r)}}}function Ia(a,e,t=[]){let n=U(`<div class="mhead"><h2>${c(e)}</h2><button class="x" data-close aria-label="Band karein">\xD7</button></div>
+    <p class="muted" style="margin:0">Har entry jaanch lein. Galat ho to badlein, ya tick hata dein. Naye naam ka khata apne aap ban jayega.</p>
+    ${t.length?`<div class="banner info">${t.map(c).join("<br>")}</div>`:""}
+    <datalist id="rlist">${[...s.parties.values()].map(i=>`<option value="${c(i.name)}"></option>`).join("")}</datalist>
+    <div class="review">${a.map((i,o)=>`<div class="rv" data-i="${o}">
+      <div class="rtop"><input type="checkbox" checked aria-label="Is entry ko save karein"><input class="rn" list="rlist" value="${c(i.name)}" placeholder="Naam" aria-label="Naam">${ga(i.name)?"":'<span class="chip zero small">Naya</span>'}</div>
+      <div class="rgrid"><select class="rt" aria-label="Prakar"><option value="gave" ${i.type==="gave"?"selected":""}>Maine diye</option><option value="got" ${i.type==="got"?"selected":""}>Mujhe mile</option></select>
+      <input class="ra" type="number" inputmode="decimal" step="0.01" value="${c(i.amount||"")}" placeholder="\u20B9" aria-label="Rakam"><input class="rd" type="date" value="${c(i.date)}" aria-label="Tarikh"></div>
+      <input class="ro" value="${c(i.note)}" placeholder="Vivran" aria-label="Vivran" maxlength="200"></div>`).join("")}</div>
+    <div class="mfoot"><button class="btn" data-close>Radd karein</button><button class="btn pri grow" id="rsave">Chuni hui entries save karein</button></div><span class="status" id="rst" role="status"></span>`);n.querySelectorAll(".rv input[type=checkbox]").forEach(i=>i.onchange=()=>i.closest(".rv").classList.toggle("off",!i.checked)),n.querySelector("#rsave").onclick=()=>{let i=n.querySelector("#rst"),o=[...n.querySelectorAll(".rv")].map(d=>({el:d,i:+d.dataset.i,on:d.querySelector("input[type=checkbox]").checked,name:d.querySelector(".rn").value.trim(),type:d.querySelector(".rt").value,amount:Math.round(Number(d.querySelector(".ra").value)*100)/100,date:d.querySelector(".rd").value,note:d.querySelector(".ro").value.trim()})).filter(d=>d.on),l=o.find(d=>!d.name||!(d.amount>0)||!/^\d{4}-\d{2}-\d{2}$/.test(d.date));if(!o.length){i.textContent="Koi entry chuni nahi gayi.";return}if(l){i.className="status err",i.textContent="Har chuni entry mein naam, rakam aur tarikh bharein.",l.el.scrollIntoView({block:"center"});return}let r=q(x);for(let d of o){let m=za(d.name);r.set(v("entries",G("entries")),{partyId:m,type:d.type,amount:d.amount,date:d.date,note:d.note,proofId:a[d.i].proofId||null,createdAt:Date.now(),createdBy:I})}w(r.commit()),B(),f(o.length+" entries jud gayi")}}function Te(a){let e=s.proofs.get(a);if(!e)return;let t=(e.contentType||"").startsWith("image/"),n=_([...s.entries.values()].filter(r=>r.proofId===a)),i=U(`<div class="mhead"><h2>Parchi</h2><button class="x" data-close aria-label="Band karein">\xD7</button></div>
+    <div id="pv">${e.thumb?`<img class="bigimg" src="${c(e.thumb)}" alt="">`:""}<p class="muted small">Poori photo khul rahi hai\u2026</p></div>
+    <div class="kv"><span class="muted">Upload</span><span>${new Date(e.uploadedAt||0).toLocaleString("en-IN")}${C(e.by)?" \xB7 "+c(C(e.by)):""}</span><span class="muted">File</span><span style="overflow-wrap:anywhere">${c(e.name)}</span></div>
+    <section><h3 style="font-size:17px;margin-bottom:6px">Judi entries (${n.length})</h3><div class="list">${n.map(r=>$a(r)).join("")||'<p class="muted" style="margin:0">Abhi koi entry nahi judi.</p>'}</div></section>
+    <div class="toolbar"><button class="btn pri" id="padd">${h.plus}Entry jodein</button><button class="btn" id="pai">${h.spark}AI se entries banwayein</button><button class="btn" id="pdl">${h.dl}Download</button><button class="btn danger" id="pdel">Hatayein</button></div>
+    <span class="status" id="pst" role="status"></span>`),o=i.querySelector("#pst");ra(a).then(r=>{let d=i.querySelector("#pv");if(d){if(!r){d.innerHTML='<p class="muted">Poori file abhi nahi mili (internet check karein).</p>';return}if(t)d.innerHTML=`<img class="bigimg" src="${r}" alt="${c(e.name)}">`;else{let m=URL.createObjectURL(Ea(r));d.innerHTML=`<a class="btn" href="${m}" target="_blank" rel="noopener">${h.doc}PDF kholein</a>`}}}).catch(()=>{let r=i.querySelector("#pv");r&&(r.innerHTML='<p class="muted">Poori file abhi nahi khul payi.</p>')}),i.querySelector("#padd").onclick=()=>W({proofId:a});let l=i.querySelector("#pai");l.onclick=async()=>{l.disabled=!0,o.className="status",o.textContent="AI parchi padh raha hai\u2026";try{let r=await ra(a);if(!r)throw new Error("nofile");let d=await Wa(r,e.contentType,a);d.length?Ia(d,"Parchi se "+d.length+" entries mili"):(o.textContent="Isme koi len-den nahi mila.",l.disabled=!1)}catch(r){l.disabled=!1,o.className="status err",o.textContent=ka(r)}},i.querySelector("#pdl").onclick=async()=>{let r=await ra(a).catch(()=>null);if(!r){f("File abhi nahi mili.");return}J("parchi-"+new Date(e.uploadedAt||0).toISOString().slice(0,10)+(t?".jpg":".pdf"),Ea(r))},i.querySelector("#pdel").onclick=async()=>{if(!await O("Parchi hatayein?",`Parchi Trash mein jayegi. ${n.length?n.length+" entries bani rahengi, bas unse saboot alag ho jayega.":""}`,"Hatayein"))return;let r=q(x);for(let d of n)r.update(v("entries",d.id),{proofId:null});Q("proof",a,r),w(r.commit()),f("Parchi Trash mein")}}async function Ha(a){let e={app:"hisab-khata",version:2,exportedAt:new Date().toISOString(),parties:[...s.parties.values()],entries:[...s.entries.values()],proofs:[...s.proofs.values()]};if(a){if(!navigator.onLine){f("Photo wale backup ke liye internet chahiye.");return}f("Photos jod rahe hain\u2026",6e3);try{let t=await de(ya("proofFiles"));e.proofFiles=t.docs.map(n=>({id:n.id,data:n.data().data}))}catch(t){f(ba(t));return}}J("hisab-backup"+(a?"-photos":"")+"-"+K()+".json",JSON.stringify(e),"application/json")}async function Ee(a){if(!a)return;let e;try{e=JSON.parse(await a.text())}catch{f("Yeh sahi backup file nahi hai.");return}if(!e||e.app!=="hisab-khata"){f("Yeh Hisab Khata ki backup file nahi hai.");return}let t=(e.parties||[]).filter(u=>Y(u.id)),n=(e.entries||[]).filter(u=>Y(u.id)&&u.amount>0),i=(e.proofs||[]).filter(u=>Y(u.id)),o=(e.proofFiles||[]).filter(u=>Y(u.id)&&typeof u.data=="string"&&u.data.length<1e6);if(!await O("Backup wapas laayein?",`${t.length} khate, ${n.length} entries aur ${i.length} parchiyan${o.length?" ("+o.length+" photo)":""} wapas aayengi. Jo abhi hai woh waisa hi rahega; same entry dobara nahi banegi.`,"Wapas laayein",!1))return;let l=(u,T)=>{let y={};return T.forEach(A=>{u[A]!==void 0&&(y[A]=u[A])}),y},r=[];t.forEach(u=>r.push(["parties",u.id,l(u,["name","phone","note","createdAt","createdBy"])])),i.forEach(u=>r.push(["proofs",u.id,l(u,["name","contentType","size","thumb","uploadedAt","by"])])),n.forEach(u=>r.push(["entries",u.id,l({...u,amount:Number(u.amount)},["partyId","type","amount","date","note","proofId","createdAt","createdBy","updatedAt","updatedBy"])]));let d=q(x),m=0,S=0;for(let[u,T,y]of r)d.set(v(u,T),y),++m%400===0&&(w(d.commit()),d=q(x));w(d.commit());for(let u of o)w(z(v("proofFiles",u.id),{data:u.data}));f("Backup wapas aa raha hai ("+(r.length+o.length)+")",4e3)}function De(a){let e=s.trash.get(a);if(!e||!Y(e.refId))return;let t=e.kind==="party"?"parties":e.kind==="entry"?"entries":"proofs",n=q(x);if(e.kind==="entry"&&e.data&&!s.parties.has(e.data.partyId)){let i=[...s.trash.values()].find(o=>o.kind==="party"&&o.refId===e.data.partyId);i&&(n.set(v("parties",i.refId),i.data),n.delete(v("trash",i.id)))}n.set(v(t,e.refId),e.data||{}),n.delete(v("trash",a)),w(n.commit()),f("Wapas aa gaya")}async function He(){if(!await O("Trash khali karein?","Trash ki sabhi cheezein hamesha ke liye hat jayengi. Yeh wapas nahi aa sakti.","Hamesha ke liye hatayein"))return;let a=q(x),e=0;for(let t of s.trash.values())a.delete(v("trash",t.id)),t.kind==="proof"&&(a.delete(v("proofFiles",t.refId)),e++),++e%400===0&&(w(a.commit()),a=q(x));w(a.commit()),f("Trash khali ho gaya")}fe();
+</script>
+</body>
+</html>
